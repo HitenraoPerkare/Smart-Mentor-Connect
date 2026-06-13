@@ -1,5 +1,7 @@
 import Booking from '../models/Booking.js';
 import Mentor from '../models/Mentor.js';
+import User from '../models/User.js';
+import { createCalendarEvent } from '../services/GoogleCalendar/googleCalendarService.js';
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -69,6 +71,39 @@ export const createBooking = async (req, res) => {
       endTime,
     });
 
+    // 5. Optionally create a Google Calendar Event and Meet link
+    // We do this AFTER saving the booking so a Google API failure doesn't block booking creation
+    if (mentor.googleRefreshToken) {
+      try {
+        const student = await User.findById(studentId).select('name email');
+        const mentorUser = await User.findById(mentor.userId).select('name');
+
+        const { eventId, meetingLink } = await createCalendarEvent(
+          {
+            accessToken: mentor.googleAccessToken,
+            refreshToken: mentor.googleRefreshToken,
+          },
+          {
+            date,
+            startTime,
+            endTime,
+            studentName: student?.name || 'Student',
+            studentEmail: student?.email || null,
+            mentorName: mentorUser?.name || 'Mentor',
+          }
+        );
+
+        // Update the booking with the Meet link
+        booking.meetingLink = meetingLink;
+        booking.calendarEventId = eventId;
+        booking.status = 'confirmed'; // Auto-confirm when Meet link is generated
+        await booking.save();
+      } catch (calendarError) {
+        // Don't fail the booking if calendar creation fails — log and continue
+        console.error('Google Calendar event creation failed (booking still saved):', calendarError.message);
+      }
+    }
+
     res.status(201).json(booking);
   } catch (error) {
     console.error(error);
@@ -79,6 +114,7 @@ export const createBooking = async (req, res) => {
     res.status(500).json({ message: 'Server error creating booking' });
   }
 };
+
 
 // @desc    Get user's bookings (as student or mentor)
 // @route   GET /api/bookings

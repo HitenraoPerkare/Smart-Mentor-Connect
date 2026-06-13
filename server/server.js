@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import mentorRoutes from './routes/mentorRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 
 // Load env vars
 dotenv.config();
@@ -15,13 +16,17 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/mentors', mentorRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Base health check route
 app.get('/', (req, res) => {
