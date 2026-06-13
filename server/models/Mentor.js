@@ -39,6 +39,10 @@ const mentorSchema = new mongoose.Schema(
       type: [availabilitySlotSchema],
       default: [],
     },
+    unavailableDates: {
+      type: [String], // Format: YYYY-MM-DD
+      default: [],
+    },
     googleRefreshToken: {
       type: String,
       default: null,
