@@ -4,7 +4,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Mentors from "./pages/Mentors";
 import MentorProfile from "./pages/MentorProfile";
-import BookingConfirmation from "./pages/BookingConfirmation";
+import Booking from "./pages/Booking";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -40,7 +40,7 @@ function App() {
           />
         )}
         {currentPage === "booking" && (
-          <BookingConfirmation
+          <Booking
             mentor={selectedMentor}
             slot={selectedSlot}
             onNavigate={setCurrentPage}
