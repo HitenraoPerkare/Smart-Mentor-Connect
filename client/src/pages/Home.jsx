@@ -1,18 +1,12 @@
 import React from "react";
-import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
-import Footer from "../components/Footer";
 
-export default function Home() {
+export default function Home({ onNavigate }) {
   return (
-    <div className="min-h-screen bg-white text-slate-800 flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
-      <Navbar />
-      <main className="flex-grow">
-        <Hero />
-        <Features />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <Hero onNavigate={onNavigate} />
+      <Features />
+    </>
   );
 }

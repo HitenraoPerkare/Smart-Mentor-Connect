@@ -1,14 +1,22 @@
 import { useState } from "react";
 
-export default function Navbar() {
+export default function Navbar({ currentPage, onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleNavClick = (page) => {
+    onNavigate(page);
+    setIsOpen(false);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
+          <div 
+            onClick={() => handleNavClick("home")} 
+            className="flex items-center gap-2.5 cursor-pointer"
+          >
             <div className="bg-blue-50 p-2 rounded-xl text-blue-600">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -32,21 +40,30 @@ export default function Navbar() {
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-8">
-            <a
-              href="#"
-              className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-200"
+            <button
+              onClick={() => handleNavClick("home")}
+              className={`font-semibold text-sm transition-colors duration-200 cursor-pointer ${
+                currentPage === "home" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
+              }`}
             >
               Home
-            </a>
-            <a
-              href="#"
-              className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-200"
+            </button>
+            <button
+              onClick={() => handleNavClick("mentors")}
+              className={`font-semibold text-sm transition-colors duration-200 cursor-pointer ${
+                currentPage === "mentors" ? "text-blue-600" : "text-slate-600 hover:text-blue-600"
+              }`}
             >
               Find Mentors
-            </a>
+            </button>
             <a
-              href="#"
-              className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors duration-200"
+              href="#features"
+              onClick={(e) => {
+                if (currentPage !== "home") {
+                  handleNavClick("home");
+                }
+              }}
+              className="text-slate-600 hover:text-blue-600 font-semibold text-sm transition-colors duration-200"
             >
               How It Works
             </a>
@@ -68,7 +85,7 @@ export default function Navbar() {
             >
               {isOpen ? (
                 <svg
-                  className="h-6.0 h-6 w-6"
+                  className="h-6 w-6"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -103,21 +120,32 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-slate-100 px-4 pt-2 pb-4 space-y-2">
-          <a
-            href="#"
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          <button
+            onClick={() => handleNavClick("home")}
+            className={`block w-full text-left px-3 py-2 rounded-lg text-base font-semibold transition-colors ${
+              currentPage === "home" ? "text-blue-600 bg-blue-50/50" : "text-slate-600 hover:text-blue-600 hover:bg-slate-50"
+            }`}
           >
             Home
-          </a>
-          <a
-            href="#"
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          </button>
+          <button
+            onClick={() => handleNavClick("mentors")}
+            className={`block w-full text-left px-3 py-2 rounded-lg text-base font-semibold transition-colors ${
+              currentPage === "mentors" ? "text-blue-600 bg-blue-50/50" : "text-slate-600 hover:text-blue-600 hover:bg-slate-50"
+            }`}
           >
             Find Mentors
-          </a>
+          </button>
           <a
-            href="#"
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+            href="#features"
+            onClick={(e) => {
+              if (currentPage !== "home") {
+                handleNavClick("home");
+              } else {
+                setIsOpen(false);
+              }
+            }}
+            className="block px-3 py-2 rounded-lg text-base font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
           >
             How It Works
           </a>
