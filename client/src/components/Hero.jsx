@@ -40,7 +40,7 @@ export default function Hero({ onNavigate }) {
                 Find a Mentor
               </button>
               <button 
-                onClick={() => onNavigate("mentors")}
+                onClick={() => onNavigate("become-mentor")}
                 className="px-7 py-4 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-semibold rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-all duration-200 cursor-pointer text-center"
               >
                 Become a Mentor

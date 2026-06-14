@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Mentors from "./pages/Mentors";
 import MentorProfile from "./pages/MentorProfile";
 import Booking from "./pages/Booking";
+import BecomeMentor from "./pages/BecomeMentor";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -45,6 +46,9 @@ function App() {
             slot={selectedSlot}
             onNavigate={setCurrentPage}
           />
+        )}
+        {currentPage === "become-mentor" && (
+          <BecomeMentor onNavigate={setCurrentPage} />
         )}
       </main>
       <Footer />
