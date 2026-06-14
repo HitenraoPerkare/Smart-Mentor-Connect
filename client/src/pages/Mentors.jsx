@@ -104,7 +104,7 @@ const EXPERTISE_FILTERS = [
   "React Native",
 ];
 
-export default function Mentors() {
+export default function Mentors({ onSelectMentor }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState("All");
 
@@ -192,13 +192,19 @@ export default function Mentors() {
                 <div>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3.5">
-                      <div className="relative">
+                      <div 
+                        className="relative cursor-pointer"
+                        onClick={() => onSelectMentor(mentor)}
+                      >
                         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${mentor.avatarBg} text-white font-extrabold flex items-center justify-center text-lg shadow-sm`}>
                           {mentor.avatarInitials}
                         </div>
                         <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${mentor.isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                       </div>
-                      <div>
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => onSelectMentor(mentor)}
+                      >
                         <h3 className="font-bold text-slate-800 text-base hover:text-blue-600 transition-colors duration-200">
                           {mentor.name}
                         </h3>
@@ -261,7 +267,10 @@ export default function Mentors() {
 
                 {/* Book Session CTA */}
                 <div className="mt-6">
-                  <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/5 hover:shadow-lg transition-all duration-200 text-sm cursor-pointer text-center">
+                  <button 
+                    onClick={() => onSelectMentor(mentor)}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/5 hover:shadow-lg transition-all duration-200 text-sm cursor-pointer text-center"
+                  >
                     Book Session
                   </button>
                 </div>
