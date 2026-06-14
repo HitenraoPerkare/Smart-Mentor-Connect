@@ -1,11 +1,44 @@
 import { useState } from "react";
 
-export default function Navbar({ currentPage, onNavigate }) {
+export default function Navbar({ 
+  currentPage, 
+  onNavigate, 
+  isAuthenticated, 
+  currentUser, 
+  onLogout,
+  triggerToast 
+}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleNavClick = (page) => {
     onNavigate(page);
     setIsOpen(false);
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
+  const bgColors = [
+    "from-blue-500 to-indigo-600",
+    "from-purple-500 to-indigo-600",
+    "from-emerald-500 to-teal-600",
+    "from-amber-500 to-orange-600",
+    "from-rose-500 to-pink-600",
+    "from-indigo-500 to-blue-600",
+  ];
+  
+  const getAvatarBg = (name) => {
+    if (!name) return bgColors[0];
+    const sum = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return bgColors[sum % bgColors.length];
   };
 
   return (
@@ -69,11 +102,64 @@ export default function Navbar({ currentPage, onNavigate }) {
             </a>
           </div>
 
-          {/* Desktop Login Button */}
-          <div className="hidden md:flex items-center">
-            <button className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
-              Login
-            </button>
+          {/* Desktop User Status / Login Button */}
+          <div className="hidden md:flex items-center gap-4 relative">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-slate-500">
+                  Welcome, <span className="font-bold text-slate-700">{currentUser?.name}</span>
+                </span>
+                <div className="relative">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm shadow-md cursor-pointer hover:shadow transition-all`}
+                  >
+                    {getInitials(currentUser?.name)}
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {dropdownOpen && (
+                    <>
+                      {/* Backdrop to close click */}
+                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                      <div className="absolute right-0 mt-2.5 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-fade-in text-left">
+                        <div className="px-4 py-2 border-b border-slate-50">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Signed in as</p>
+                          <p className="text-xs font-bold text-slate-800 truncate">{currentUser?.name}</p>
+                          <p className="text-[9px] text-slate-400 font-semibold truncate capitalize">{currentUser?.role}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            triggerToast("My Profile page coming soon!", "success");
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          My Profile
+                        </button>
+                        <div className="border-t border-slate-50 my-1" />
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50/50 transition-colors cursor-pointer"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button 
+                onClick={() => handleNavClick("login")}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
+              >
+                Login
+              </button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -84,32 +170,12 @@ export default function Navbar({ currentPage, onNavigate }) {
               aria-label="Toggle menu"
             >
               {isOpen ? (
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
             </button>
@@ -149,11 +215,50 @@ export default function Navbar({ currentPage, onNavigate }) {
           >
             How It Works
           </a>
-          <div className="pt-2 border-t border-slate-100">
-            <button className="w-full text-center px-4 py-2.5 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all duration-200 cursor-pointer">
-              Login
-            </button>
-          </div>
+
+          {/* Mobile User Profile Section */}
+          {isAuthenticated ? (
+            <div className="pt-4 border-t border-slate-100 space-y-3 text-left">
+              <div className="flex items-center gap-3 px-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm`}>
+                  {getInitials(currentUser?.name)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-sm">{currentUser?.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-semibold capitalize">{currentUser?.role}</p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    triggerToast("My Profile page coming soon!", "success");
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  My Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm font-bold text-rose-500 hover:bg-rose-50/50 transition-colors cursor-pointer"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-slate-100">
+              <button 
+                onClick={() => handleNavClick("login")}
+                className="w-full text-center px-4 py-2.5 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all duration-200 cursor-pointer"
+              >
+                Login
+              </button>
+            </div>
+          )}
         </div>
       )}
     </nav>
