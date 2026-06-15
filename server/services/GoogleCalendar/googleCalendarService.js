@@ -9,15 +9,17 @@ const createOAuth2Client = () => {
 };
 
 // Generate the Google consent page URL
-export const getAuthUrl = () => {
+export const getAuthUrl = (userId) => {
   const oauth2Client = createOAuth2Client();
   const scopes = [
     'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/calendar.readonly',
   ];
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',   // ensures we get a refresh token
     prompt: 'consent',        // forces consent screen every time so we always get refresh token
     scope: scopes,
+    state: userId,
   });
 };
 
@@ -76,4 +78,31 @@ export const createCalendarEvent = async ({ accessToken, refreshToken }, booking
     eventId: response.data.id,
     meetingLink: response.data.hangoutLink || null,
   };
+};
+
+// Check for calendar conflicts
+export const checkCalendarConflicts = async ({ accessToken, refreshToken }, date, startTime, endTime) => {
+  const oauth2Client = createOAuth2Client();
+
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  const startDateTime = new Date(`${date}T${startTime}:00.000Z`).toISOString();
+  const endDateTime = new Date(`${date}T${endTime}:00.000Z`).toISOString();
+
+  const response = await calendar.freebusy.query({
+    requestBody: {
+      timeMin: startDateTime,
+      timeMax: endDateTime,
+      timeZone: 'UTC',
+      items: [{ id: 'primary' }],
+    },
+  });
+
+  const busySlots = response.data.calendars.primary.busy;
+  return busySlots && busySlots.length > 0;
 };

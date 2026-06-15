@@ -35,6 +35,14 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Please specify your local timezone'],
       default: 'UTC',
     },
+    googleRefreshToken: {
+      type: String,
+      default: null,
+    },
+    googleAccessToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -16,17 +16,20 @@ connectDB();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.CLIENT_URL || 'http://localhost:5173',
-      'http://localhost:5173',
-      'http://localhost:5174',
-    ];
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow server-to-server or same-origin requests (no origin header)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
     }
   },
   credentials: true,

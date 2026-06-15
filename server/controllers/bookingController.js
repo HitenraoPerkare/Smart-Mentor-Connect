@@ -1,7 +1,7 @@
 import Booking from '../models/Booking.js';
 import Mentor from '../models/Mentor.js';
 import User from '../models/User.js';
-import { createCalendarEvent } from '../services/GoogleCalendar/googleCalendarService.js';
+import { createCalendarEvent, checkCalendarConflicts } from '../services/GoogleCalendar/googleCalendarService.js';
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -62,6 +62,28 @@ export const createBooking = async (req, res) => {
       }
     }
 
+    const studentUser = await User.findById(studentId);
+    const mentorUser = await User.findById(mentor.userId);
+
+    if (studentUser && studentUser.googleRefreshToken) {
+      try {
+        const hasConflict = await checkCalendarConflicts(
+          {
+            accessToken: studentUser.googleAccessToken,
+            refreshToken: studentUser.googleRefreshToken,
+          },
+          date,
+          startTime,
+          endTime
+        );
+        if (hasConflict) {
+          return res.status(409).json({ message: 'You already have an event scheduled on your Google Calendar at this time.' });
+        }
+      } catch (err) {
+        console.error('Failed to check student calendar conflicts:', err.message);
+      }
+    }
+
     // 4. Create Booking
     const booking = await Booking.create({
       mentorId,
@@ -73,22 +95,19 @@ export const createBooking = async (req, res) => {
 
     // 5. Optionally create a Google Calendar Event and Meet link
     // We do this AFTER saving the booking so a Google API failure doesn't block booking creation
-    if (mentor.googleRefreshToken) {
+    if (mentorUser && mentorUser.googleRefreshToken) {
       try {
-        const student = await User.findById(studentId).select('name email');
-        const mentorUser = await User.findById(mentor.userId).select('name');
-
         const { eventId, meetingLink } = await createCalendarEvent(
           {
-            accessToken: mentor.googleAccessToken,
-            refreshToken: mentor.googleRefreshToken,
+            accessToken: mentorUser.googleAccessToken,
+            refreshToken: mentorUser.googleRefreshToken,
           },
           {
             date,
             startTime,
             endTime,
-            studentName: student?.name || 'Student',
-            studentEmail: student?.email || null,
+            studentName: studentUser?.name || 'Student',
+            studentEmail: studentUser?.email || null,
             mentorName: mentorUser?.name || 'Mentor',
           }
         );
