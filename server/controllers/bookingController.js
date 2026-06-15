@@ -93,15 +93,20 @@ export const createBooking = async (req, res) => {
       endTime,
     });
 
-    // 5. Optionally create a Google Calendar Event and Meet link
-    // We do this AFTER saving the booking so a Google API failure doesn't block booking creation
-    if (mentorUser && mentorUser.googleRefreshToken) {
+    // 5. Create a Google Calendar Event with a real Google Meet link
+    // Try mentor's tokens first, then fall back to student's tokens
+    // Both users are added as attendees so they both receive the invite
+    const calendarTokens =
+      mentorUser?.googleRefreshToken
+        ? { accessToken: mentorUser.googleAccessToken, refreshToken: mentorUser.googleRefreshToken }
+        : studentUser?.googleRefreshToken
+        ? { accessToken: studentUser.googleAccessToken, refreshToken: studentUser.googleRefreshToken }
+        : null;
+
+    if (calendarTokens) {
       try {
         const { eventId, meetingLink } = await createCalendarEvent(
-          {
-            accessToken: mentorUser.googleAccessToken,
-            refreshToken: mentorUser.googleRefreshToken,
-          },
+          calendarTokens,
           {
             date,
             startTime,
@@ -109,16 +114,15 @@ export const createBooking = async (req, res) => {
             studentName: studentUser?.name || 'Student',
             studentEmail: studentUser?.email || null,
             mentorName: mentorUser?.name || 'Mentor',
+            mentorEmail: mentorUser?.email || null,
           }
         );
 
-        // Update the booking with the Meet link
         booking.meetingLink = meetingLink;
         booking.calendarEventId = eventId;
-        booking.status = 'confirmed'; // Auto-confirm when Meet link is generated
+        booking.status = 'confirmed';
         await booking.save();
       } catch (calendarError) {
-        // Don't fail the booking if calendar creation fails — log and continue
         console.error('Google Calendar event creation failed (booking still saved):', calendarError.message);
       }
     }

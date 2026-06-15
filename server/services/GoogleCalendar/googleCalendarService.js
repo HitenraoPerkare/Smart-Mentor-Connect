@@ -41,15 +41,20 @@ export const createCalendarEvent = async ({ accessToken, refreshToken }, booking
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-  const { date, startTime, endTime, studentName, studentEmail, mentorName } = bookingDetails;
+  const { date, startTime, endTime, studentName, studentEmail, mentorName, mentorEmail } = bookingDetails;
 
   // Build ISO datetime strings (assume UTC for now; timezone conversion handled in Phase 6)
   const startDateTime = new Date(`${date}T${startTime}:00.000Z`).toISOString();
   const endDateTime = new Date(`${date}T${endTime}:00.000Z`).toISOString();
 
+  // Build attendees list — add both student and mentor if emails are available
+  const attendees = [];
+  if (studentEmail) attendees.push({ email: studentEmail });
+  if (mentorEmail) attendees.push({ email: mentorEmail });
+
   const event = {
     summary: `Mentorship Session: ${mentorName} & ${studentName}`,
-    description: `Scheduled mentorship session via Smart Mentor Connect.`,
+    description: `Scheduled mentorship session via Smart Mentor Connect.\n\nMentor: ${mentorName}\nStudent: ${studentName}`,
     start: {
       dateTime: startDateTime,
       timeZone: 'UTC',
@@ -58,7 +63,7 @@ export const createCalendarEvent = async ({ accessToken, refreshToken }, booking
       dateTime: endDateTime,
       timeZone: 'UTC',
     },
-    attendees: studentEmail ? [{ email: studentEmail }] : [],
+    attendees,
     conferenceData: {
       createRequest: {
         requestId: `smc-${Date.now()}`,
