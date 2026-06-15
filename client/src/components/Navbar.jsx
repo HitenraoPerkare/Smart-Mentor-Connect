@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Navbar({ 
   currentPage, 
@@ -10,6 +10,7 @@ export default function Navbar({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const handleNavClick = (page) => {
     onNavigate(page);
@@ -40,6 +41,19 @@ export default function Navbar({
     const sum = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return bgColors[sum % bgColors.length];
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
@@ -106,49 +120,52 @@ export default function Navbar({
           <div className="hidden md:flex items-center gap-4 relative">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-500">
-                  Welcome, <span className="font-bold text-slate-700">{currentUser?.name}</span>
+                <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                  Welcome, <span className="font-bold text-slate-700">{currentUser?.fullName || currentUser?.name}</span>
+                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wide border ${
+                    currentUser?.role === "Mentor" 
+                      ? "bg-purple-50 text-purple-700 border-purple-100" 
+                      : "bg-blue-50 text-blue-700 border-blue-100"
+                  }`}>
+                    {currentUser?.role}
+                  </span>
                 </span>
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm shadow-md cursor-pointer hover:shadow transition-all`}
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.fullName || currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm shadow-md cursor-pointer hover:shadow transition-all`}
                   >
-                    {getInitials(currentUser?.name)}
+                    {getInitials(currentUser?.fullName || currentUser?.name)}
                   </button>
 
                   {/* Dropdown Menu */}
                   {dropdownOpen && (
-                    <>
-                      {/* Backdrop to close click */}
-                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                      <div className="absolute right-0 mt-2.5 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-fade-in text-left">
-                        <div className="px-4 py-2 border-b border-slate-50">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Signed in as</p>
-                          <p className="text-xs font-bold text-slate-800 truncate">{currentUser?.name}</p>
-                          <p className="text-[9px] text-slate-400 font-semibold truncate capitalize">{currentUser?.role}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            triggerToast("My Profile page coming soon!", "success");
-                          }}
-                          className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors cursor-pointer"
-                        >
-                          My Profile
-                        </button>
-                        <div className="border-t border-slate-50 my-1" />
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            onLogout();
-                          }}
-                          className="w-full text-left px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50/50 transition-colors cursor-pointer"
-                        >
-                          Logout
-                        </button>
+                    <div className="absolute right-0 mt-2.5 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-fade-in text-left">
+                      <div className="px-4 py-2 border-b border-slate-50">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Signed in as</p>
+                        <p className="text-xs font-bold text-slate-800 truncate">{currentUser?.fullName || currentUser?.name}</p>
+                        <p className="text-[9px] text-slate-400 font-semibold truncate capitalize">{currentUser?.role}</p>
                       </div>
-                    </>
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          onNavigate("my-profile");
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
+                        My Profile
+                      </button>
+                      <div className="border-t border-slate-50 my-1" />
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          onLogout();
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50/50 transition-colors cursor-pointer"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -220,19 +237,28 @@ export default function Navbar({
           {isAuthenticated ? (
             <div className="pt-4 border-t border-slate-100 space-y-3 text-left">
               <div className="flex items-center gap-3 px-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm`}>
-                  {getInitials(currentUser?.name)}
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarBg(currentUser?.fullName || currentUser?.name)} text-white font-extrabold flex items-center justify-center text-sm`}>
+                  {getInitials(currentUser?.fullName || currentUser?.name)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-800 text-sm">{currentUser?.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-semibold capitalize">{currentUser?.role}</p>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-800 text-sm">{currentUser?.fullName || currentUser?.name}</h4>
+                    <span className={`px-2 py-0.5 text-[8px] font-bold rounded-md uppercase tracking-wide border ${
+                      currentUser?.role === "Mentor" 
+                        ? "bg-purple-50 text-purple-700 border-purple-100" 
+                        : "bg-blue-50 text-blue-700 border-blue-100"
+                    }`}>
+                      {currentUser?.role}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-semibold truncate">{currentUser?.email}</p>
                 </div>
               </div>
               <div className="space-y-1">
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    triggerToast("My Profile page coming soon!", "success");
+                    onNavigate("my-profile");
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >

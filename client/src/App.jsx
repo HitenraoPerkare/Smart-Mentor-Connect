@@ -8,11 +8,13 @@ import Booking from "./pages/Booking";
 import BecomeMentor from "./pages/BecomeMentor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState("");
+  const [redirectToAfterLogin, setRedirectToAfterLogin] = useState(null);
 
   // Global Mock Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -47,9 +49,26 @@ function App() {
   };
 
   const handleBookSession = (mentor, slot) => {
-    setSelectedMentor(mentor);
-    setSelectedSlot(slot);
-    setCurrentPage("booking");
+    if (!isAuthenticated) {
+      setRedirectToAfterLogin({ page: "booking", mentor, slot });
+      setToast({ message: "Please sign in to book a mentorship session.", type: "error" });
+      setCurrentPage("login");
+    } else {
+      setSelectedMentor(mentor);
+      setSelectedSlot(slot);
+      setCurrentPage("booking");
+    }
+  };
+
+  const handleBookSessionClickFromListing = (mentor) => {
+    if (!isAuthenticated) {
+      setRedirectToAfterLogin({ page: "profile", mentor });
+      setToast({ message: "Please sign in to book a mentorship session.", type: "error" });
+      setCurrentPage("login");
+    } else {
+      setSelectedMentor(mentor);
+      setCurrentPage("profile");
+    }
   };
 
   const handleLogin = (userData) => {
@@ -60,7 +79,19 @@ function App() {
     localStorage.setItem("currentUser", JSON.stringify(userData));
     localStorage.setItem("role", userData.role);
     setToast({ message: "Successfully signed in.", type: "success" });
-    setCurrentPage("home");
+    
+    if (redirectToAfterLogin) {
+      if (redirectToAfterLogin.mentor) {
+        setSelectedMentor(redirectToAfterLogin.mentor);
+      }
+      if (redirectToAfterLogin.slot) {
+        setSelectedSlot(redirectToAfterLogin.slot);
+      }
+      setCurrentPage(redirectToAfterLogin.page);
+      setRedirectToAfterLogin(null);
+    } else {
+      setCurrentPage("home");
+    }
   };
 
   const handleRegister = (userData) => {
@@ -71,7 +102,19 @@ function App() {
     localStorage.setItem("currentUser", JSON.stringify(userData));
     localStorage.setItem("role", userData.role);
     setToast({ message: "Account created successfully.", type: "success" });
-    setCurrentPage("home");
+    
+    if (redirectToAfterLogin) {
+      if (redirectToAfterLogin.mentor) {
+        setSelectedMentor(redirectToAfterLogin.mentor);
+      }
+      if (redirectToAfterLogin.slot) {
+        setSelectedSlot(redirectToAfterLogin.slot);
+      }
+      setCurrentPage(redirectToAfterLogin.page);
+      setRedirectToAfterLogin(null);
+    } else {
+      setCurrentPage("home");
+    }
   };
 
   const handleLogout = () => {
@@ -81,7 +124,7 @@ function App() {
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("role");
-    setToast({ message: "Successfully logged out.", type: "success" });
+    setToast({ message: "Successfully signed out.", type: "success" });
     setCurrentPage("home");
   };
 
@@ -104,7 +147,11 @@ function App() {
           <Home onNavigate={setCurrentPage} />
         )}
         {currentPage === "mentors" && (
-          <Mentors onSelectMentor={handleSelectMentor} />
+          <Mentors 
+            isAuthenticated={isAuthenticated} 
+            onSelectMentor={handleSelectMentor} 
+            onBookSessionAction={handleBookSessionClickFromListing}
+          />
         )}
         {currentPage === "profile" && (
           <MentorProfile
@@ -128,6 +175,9 @@ function App() {
         )}
         {currentPage === "register" && (
           <Register onNavigate={setCurrentPage} onRegister={handleRegister} />
+        )}
+        {currentPage === "my-profile" && (
+          <Profile currentUser={currentUser} onNavigate={setCurrentPage} />
         )}
       </main>
       <Footer />

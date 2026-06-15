@@ -5,7 +5,7 @@ export default function Register({ onNavigate, onRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("student"); // "student" or "mentor"
+  const [role, setRole] = useState(""); // "" signifies unselected role
   const [showPassword, setShowPassword] = useState(false);
 
   // Validation errors state
@@ -14,13 +14,14 @@ export default function Register({ onNavigate, onRegister }) {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "",
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     // Reset errors
-    const newErrors = { name: "", email: "", password: "", confirmPassword: "" };
+    const newErrors = { name: "", email: "", password: "", confirmPassword: "", role: "" };
     let hasErrors = false;
 
     if (!name.trim()) {
@@ -33,6 +34,11 @@ export default function Register({ onNavigate, onRegister }) {
       hasErrors = true;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Please enter a valid email address";
+      hasErrors = true;
+    }
+
+    if (!role) {
+      newErrors.role = "Role must be selected";
       hasErrors = true;
     }
 
@@ -49,16 +55,49 @@ export default function Register({ onNavigate, onRegister }) {
       hasErrors = true;
     }
 
-    setErrors(newErrors);
-
-    if (!hasErrors) {
-      // Mock successful registration and navigate to Home page
-      onRegister({
-        email: email,
-        name: name,
-        role: role
-      });
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
     }
+
+    // Normalize email for case-insensitive lookup
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Retrieve and check for duplicate email address
+    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+    const isDuplicate = registeredUsers.some(
+      (u) => u.email.toLowerCase() === normalizedEmail
+    );
+
+    if (isDuplicate) {
+      newErrors.email = "Email is already registered.";
+      setErrors(newErrors);
+      return;
+    }
+
+    // Capitalize role to "Student" or "Mentor"
+    const formattedRole = role === "student" ? "Student" : "Mentor";
+
+    // Store the account details in localStorage
+    const newAccount = {
+      fullName: name.trim(),
+      email: normalizedEmail,
+      password: password,
+      role: formattedRole,
+      createdAt: new Date().toISOString()
+    };
+
+    registeredUsers.push(newAccount);
+    localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
+
+    setErrors(newErrors);
+    onRegister({
+      email: newAccount.email,
+      fullName: newAccount.fullName,
+      name: newAccount.fullName,
+      role: newAccount.role,
+      createdAt: newAccount.createdAt
+    });
   };
 
   return (
@@ -176,6 +215,12 @@ export default function Register({ onNavigate, onRegister }) {
                   <span>Mentor</span>
                 </button>
               </div>
+              {errors.role && (
+                <p className="text-[10px] text-rose-500 font-semibold flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1 h-1 bg-rose-500 rounded-full inline-block" />
+                  {errors.role}
+                </p>
+              )}
             </div>
 
             {/* Password */}

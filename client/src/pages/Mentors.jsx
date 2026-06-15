@@ -104,7 +104,7 @@ const EXPERTISE_FILTERS = [
   "React Native",
 ];
 
-export default function Mentors({ onSelectMentor }) {
+export default function Mentors({ isAuthenticated, onSelectMentor, onBookSessionAction }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState("All");
 
@@ -268,7 +268,13 @@ export default function Mentors({ onSelectMentor }) {
                 {/* Book Session CTA */}
                 <div className="mt-6">
                   <button 
-                    onClick={() => onSelectMentor(mentor)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        onBookSessionAction(mentor);
+                      } else {
+                        onSelectMentor(mentor);
+                      }
+                    }}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/5 hover:shadow-lg transition-all duration-200 text-sm cursor-pointer text-center"
                   >
                     Book Session

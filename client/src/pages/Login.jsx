@@ -31,16 +31,38 @@ export default function Login({ onNavigate, onLogin }) {
       hasErrors = true;
     }
 
-    setErrors(newErrors);
-
-    if (!hasErrors) {
-      // Mock successful login and navigate to Home page
-      onLogin({
-        email: email,
-        name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
-        role: "student" // Default mock role for quick logins
-      });
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
     }
+
+    // Validate credentials against registered accounts stored in localStorage
+    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+    const matchedUser = registeredUsers.find(
+      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+
+    if (!matchedUser) {
+      newErrors.email = "Account not found. Please register first.";
+      setErrors(newErrors);
+      return;
+    }
+
+    if (matchedUser.password !== password) {
+      newErrors.password = "Incorrect password.";
+      setErrors(newErrors);
+      return;
+    }
+
+    // Success
+    setErrors(newErrors);
+    onLogin({
+      email: matchedUser.email,
+      fullName: matchedUser.fullName,
+      name: matchedUser.fullName,
+      role: matchedUser.role,
+      createdAt: matchedUser.createdAt
+    });
   };
 
   return (
