@@ -22,11 +22,12 @@ export default function Register({ onNavigate, onRegister }) {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        await fetchApi('/mentors');
-      } catch (err) {
-        if (!err.status || err.status >= 500) {
-          setIsDemoMode(true);
-        }
+        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+        const res = await fetch(`${baseUrl}/`, { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) setIsDemoMode(true);
+      } catch {
+        // Network error — backend is unreachable
+        setIsDemoMode(true);
       }
     };
     checkBackend();
