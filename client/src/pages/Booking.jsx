@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState } from 'react';
+import { fetchApi } from '../utils/api';
 import BookingConfirmation from "./BookingConfirmation";
 
 // Fallback profile if none provided
@@ -18,64 +19,104 @@ const DEFAULT_MENTOR = {
   isOnline: true,
 };
 
-// Available slots by day (Mentor's local time)
-const MOCK_SLOTS_BY_DAY = {
-  "Monday, Jun 15": ["9:00 AM", "11:30 AM", "3:00 PM", "7:00 PM"],
-  "Wednesday, Jun 17": ["10:00 AM", "1:30 PM", "5:00 PM", "8:00 PM"],
-  "Friday, Jun 19": ["8:30 AM", "12:00 PM", "4:30 PM", "7:30 PM"],
-};
+
 
 // Timezone Offset mapping relative to UTC (in hours)
 const TIMEZONE_OFFSETS = {
   "EDT (UTC-4)": -4,
   "PDT (UTC-7)": -7,
   "IST (UTC+5:30)": 5.5,
+  "Asia/Calcutta": 5.5,
+  "Asia/Kolkata": 5.5,
+  "America/New_York": -4,
   "CEST (UTC+2)": 2,
   "GMT (UTC+0)": 0,
   "KST (UTC+9)": 9,
 };
 
-export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "", onNavigate }) {
+// Generate AM/PM time slot labels from 24h HH:MM
+const generate30MinSlots = (startTime, endTime) => {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startTotal = sh * 60 + sm;
+  const endTotal = eh * 60 + em;
+  const slots = [];
+  for (let t = startTotal; t < endTotal; t += 60) {
+    const h = Math.floor(t / 60);
+    const m = t % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    const displayM = m === 0 ? '00' : m;
+    slots.push(`${displayH}:${displayM} ${ampm}`);
+  }
+  return slots;
+};
+
+// Day name from dayOfWeek number (0=Sun)
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// Build slots by day from mentor.availability
+const buildSlotsFromAvailability = (availability = []) => {
+  const result = {};
+  const today = new Date();
+  availability.forEach(({ dayOfWeek, startTime, endTime }) => {
+    // Find the next occurrence of this dayOfWeek within 7 days
+    for (let offset = 0; offset <= 7; offset++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + offset);
+      if (d.getDay() === dayOfWeek) {
+        const label = `${DAY_NAMES[dayOfWeek]}, ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+        result[label] = { slots: generate30MinSlots(startTime, endTime), date: dateStr, startTime, endTime };
+        break;
+      }
+    }
+  });
+  return result;
+};
+
+export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "", onNavigate, currentUser }) {
   // Steps: 1 = Choose Slot, 2 = Review Booking, 3 = Confirmation
   const [step, setStep] = useState(1);
-  const [selectedDay, setSelectedDay] = useState("Monday, Jun 15");
-  const [selectedTime, setSelectedTime] = useState("");
-  const [sessionType, setSessionType] = useState("1:1 Mentorship");
-  const [duration, setDuration] = useState("60 mins");
-  const [sessionNotes, setSessionNotes] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
 
-  // Populate initial slot if passed from profile
-  useEffect(() => {
-    if (initialSlot) {
-      // E.g., "Tomorrow, 7:00 PM EDT" or "Today, 3:30 PM IST" or "Friday, 9:00 PM EDT"
-      // Let's try to see if it matches any day
-      const parts = initialSlot.split(", ");
+  // Derive initial selected day/time from the initialSlot prop (runs once at mount)
+  const getInitialDayTime = (slot, days) => {
+    let day = days[0] || "Monday, Jun 15";
+    let time = "";
+    if (slot) {
+      const parts = slot.split(", ");
       if (parts.length >= 2) {
         const dayPart = parts[0];
         const timePart = parts[1].split(" ")[0] + " " + parts[1].split(" ")[1];
-        
-        // Find matching day in our mock slots or create a temporary one
-        const matchedDay = Object.keys(MOCK_SLOTS_BY_DAY).find(d => d.toLowerCase().includes(dayPart.toLowerCase()));
-        if (matchedDay) {
-          setSelectedDay(matchedDay);
-          setSelectedTime(timePart);
-        } else {
-          // Fallback, select first slot
-          setSelectedTime("7:00 PM");
-        }
+        const matchedDay = days.find(d => d.toLowerCase().includes(dayPart.toLowerCase()));
+        if (matchedDay) { day = matchedDay; time = timePart; }
+        else { time = "7:00 PM"; }
       } else {
-        setSelectedTime("7:00 PM");
+        time = "7:00 PM";
       }
     }
-  }, [initialSlot]);
-
-  // Handle selected slot string
-  const getSelectedSlotString = () => {
-    if (!selectedTime) return "";
-    return `${selectedDay.split(",")[0]}, ${selectedTime} ${getMentorTzCode()}`;
+    return { day, time };
   };
+
+  // Build slot map from real availability (before useState so we can use it for initial state)
+  const slotsByDay = buildSlotsFromAvailability(mentor?.availability || []);
+  const SLOTS_BY_DAY = Object.keys(slotsByDay).length > 0 ? slotsByDay : {
+    "Monday, Jun 15": { slots: ["9:00 AM", "11:30 AM", "3:00 PM", "7:00 PM"], date: "2026-06-15", startTime: "09:00", endTime: "21:00" },
+    "Wednesday, Jun 17": { slots: ["10:00 AM", "1:30 PM", "5:00 PM", "8:00 PM"], date: "2026-06-17", startTime: "10:00", endTime: "20:00" },
+    "Friday, Jun 19": { slots: ["8:30 AM", "12:00 PM", "4:30 PM", "7:30 PM"], date: "2026-06-19", startTime: "08:30", endTime: "19:30" },
+  };
+
+  const initialState = getInitialDayTime(initialSlot, Object.keys(SLOTS_BY_DAY));
+  const [selectedDay, setSelectedDay] = useState(initialState.day);
+  const [selectedTime, setSelectedTime] = useState(initialState.time);
+  const [sessionType, setSessionType] = useState("1:1 Mentorship");
+  const [duration, setDuration] = useState("60 mins");
+  const [sessionNotes, setSessionNotes] = useState("");
+  const [userEmail, setUserEmail] = useState(currentUser?.email || "");
+  const [userName, setUserName] = useState(currentUser?.name || currentUser?.fullName || "");
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
+
 
   // Extract Tz code
   const getMentorTzCode = () => {
@@ -109,12 +150,9 @@ export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "
     let totalMinutes = hours * 60 + minutes + offsetDiff * 60;
     
     // Handle days overflow/underflow
-    let dayOffset = 0;
     if (totalMinutes >= 24 * 60) {
-      dayOffset = 1;
       totalMinutes -= 24 * 60;
     } else if (totalMinutes < 0) {
-      dayOffset = -1;
       totalMinutes += 24 * 60;
     }
 
@@ -128,19 +166,9 @@ export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "
     const displayMinutesStr = finalMinutes < 10 ? `0${finalMinutes}` : finalMinutes;
     const finalTimeStr = `${displayHours}:${displayMinutesStr} ${finalAmpm}`;
 
-    // Adjust day name if overflowed
-    const dayName = selectedDay.split(",")[0];
-    let finalDayName = dayName;
-    if (dayOffset === 1) {
-      finalDayName = "Next Day";
-    } else if (dayOffset === -1) {
-      finalDayName = "Previous Day";
-    }
-
     return `${finalTimeStr} IST`;
   };
 
-  const activeSlotString = getSelectedSlotString();
   const convertedSlotString = getConvertedLocalTime();
 
   // Pricing based on duration and rate
@@ -361,7 +389,7 @@ export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "
 
                     {/* Day selector tabs */}
                     <div className="flex gap-2 border-b border-slate-100 pb-3 overflow-x-auto">
-                      {Object.keys(MOCK_SLOTS_BY_DAY).map((day) => {
+                      {Object.keys(SLOTS_BY_DAY).map((day) => {
                         const isSelected = selectedDay === day;
                         return (
                           <button
@@ -384,7 +412,7 @@ export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "
 
                     {/* Slot times grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {MOCK_SLOTS_BY_DAY[selectedDay]?.map((time) => {
+                      {(SLOTS_BY_DAY[selectedDay]?.slots || []).map((time) => {
                         const isSelected = selectedTime === time;
                         return (
                           <button
@@ -568,15 +596,71 @@ export default function Booking({ mentor = DEFAULT_MENTOR, slot: initialSlot = "
                     </svg>
                   </button>
                 ) : (
-                  <button
-                    onClick={() => setStep(3)}
-                    className="w-full py-3.5 font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/15 hover:shadow-xl hover:-translate-y-0.5 rounded-2xl text-sm transition-all duration-200 text-center flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Confirm Booking</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
+                  <>
+                    {bookingError && (
+                      <p className="text-xs text-rose-500 font-semibold text-center -mb-1">{bookingError}</p>
+                    )}
+                    <button
+                      disabled={bookingLoading}
+                      onClick={async () => {
+                        setBookingError(null);
+                        setBookingLoading(true);
+                        try {
+                          const dayData = SLOTS_BY_DAY[selectedDay];
+                          // Convert selected AM/PM time to HH:MM 24h
+                          const timeMatch = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                          let startH = parseInt(timeMatch[1]);
+                          const startM = parseInt(timeMatch[2]);
+                          const ampm = timeMatch[3].toUpperCase();
+                          if (ampm === 'PM' && startH < 12) startH += 12;
+                          if (ampm === 'AM' && startH === 12) startH = 0;
+                          const startTime = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+                          const durationMins = duration === '30 mins' ? 30 : 60;
+                          const endTotalMins = startH * 60 + startM + durationMins;
+                          const endH = Math.floor(endTotalMins / 60);
+                          const endM = endTotalMins % 60;
+                          const endTime = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
+                          await fetchApi('/bookings', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              mentorId: mentor._id || mentor.id,
+                              date: dayData?.date || new Date().toISOString().split('T')[0],
+                              startTime,
+                              endTime,
+                            })
+                          });
+                          setStep(3);
+                        } catch (err) {
+                          setBookingError(err.message || 'Booking failed. Please try again.');
+                        } finally {
+                          setBookingLoading(false);
+                        }
+                      }}
+                      className={`w-full py-3.5 font-bold rounded-2xl text-sm transition-all duration-200 text-center flex items-center justify-center gap-2 ${
+                        bookingLoading
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/15 hover:shadow-xl hover:-translate-y-0.5 cursor-pointer'
+                      }`}
+                    >
+                      {bookingLoading ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                          </svg>
+                          <span>Confirming...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Confirm Booking</span>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

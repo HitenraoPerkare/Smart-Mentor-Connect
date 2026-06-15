@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from 'react';
+import { fetchApi } from '../utils/api';
 
 export default function Login({ onNavigate, onLogin }) {
   const [email, setEmail] = useState("");
@@ -11,7 +12,7 @@ export default function Login({ onNavigate, onLogin }) {
     password: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Reset errors
@@ -36,33 +37,24 @@ export default function Login({ onNavigate, onLogin }) {
       return;
     }
 
-    // Validate credentials against registered accounts stored in localStorage
-    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const matchedUser = registeredUsers.find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
-    );
+    try {
+      const data = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), password })
+      });
 
-    if (!matchedUser) {
-      newErrors.email = "Account not found. Please register first.";
+      // Success
       setErrors(newErrors);
-      return;
+      onLogin({
+        email: data.email,
+        fullName: data.name,
+        name: data.name,
+        role: data.role.charAt(0).toUpperCase() + data.role.slice(1),
+        token: data.token
+      });
+    } catch (err) {
+      setErrors({ ...newErrors, email: err.message || "Login failed" });
     }
-
-    if (matchedUser.password !== password) {
-      newErrors.password = "Incorrect password.";
-      setErrors(newErrors);
-      return;
-    }
-
-    // Success
-    setErrors(newErrors);
-    onLogin({
-      email: matchedUser.email,
-      fullName: matchedUser.fullName,
-      name: matchedUser.fullName,
-      role: matchedUser.role,
-      createdAt: matchedUser.createdAt
-    });
   };
 
   return (

@@ -1,97 +1,5 @@
-import { useState } from "react";
-
-const MOCK_MENTORS = [
-  {
-    id: 1,
-    name: "Sarah Chen",
-    role: "React Expert & Tech Lead",
-    company: "Stripe",
-    avatarInitials: "SC",
-    avatarBg: "from-blue-500 to-indigo-600",
-    expertise: ["React", "Tailwind CSS", "TypeScript", "Next.js"],
-    timezone: "EDT (UTC-4)",
-    rating: 4.9,
-    reviewsCount: 48,
-    rate: 85,
-    nextAvailable: "Tomorrow, 7:00 PM EDT",
-    isOnline: true,
-  },
-  {
-    id: 2,
-    name: "Alex Mercer",
-    role: "Senior System Architect",
-    company: "AWS",
-    avatarInitials: "AM",
-    avatarBg: "from-purple-500 to-indigo-600",
-    expertise: ["Node.js", "Express", "PostgreSQL", "System Design"],
-    timezone: "PDT (UTC-7)",
-    rating: 4.8,
-    reviewsCount: 32,
-    rate: 95,
-    nextAvailable: "Tuesday, 10:00 AM PDT",
-    isOnline: false,
-  },
-  {
-    id: 3,
-    name: "Priya Nair",
-    role: "AI Research Scientist",
-    company: "Google",
-    avatarInitials: "PN",
-    avatarBg: "from-emerald-500 to-teal-600",
-    expertise: ["Python", "Machine Learning", "TensorFlow", "SQL"],
-    timezone: "IST (UTC+5:30)",
-    rating: 4.9,
-    reviewsCount: 54,
-    rate: 75,
-    nextAvailable: "Today, 3:30 PM IST",
-    isOnline: true,
-  },
-  {
-    id: 4,
-    name: "Marcus Aurelius",
-    role: "Principal DevOps Engineer",
-    company: "HashiCorp",
-    avatarInitials: "MA",
-    avatarBg: "from-amber-500 to-orange-600",
-    expertise: ["Go", "Kubernetes", "Docker", "DevOps"],
-    timezone: "CEST (UTC+2)",
-    rating: 4.7,
-    reviewsCount: 19,
-    rate: 90,
-    nextAvailable: "Wednesday, 2:00 PM CEST",
-    isOnline: false,
-  },
-  {
-    id: 5,
-    name: "Elena Rostova",
-    role: "Lead Product Designer",
-    company: "Figma",
-    avatarInitials: "ER",
-    avatarBg: "from-rose-500 to-pink-600",
-    expertise: ["UI/UX Design", "Figma", "React", "CSS"],
-    timezone: "GMT (UTC+0)",
-    rating: 5.0,
-    reviewsCount: 61,
-    rate: 80,
-    nextAvailable: "Monday, 9:00 AM GMT",
-    isOnline: true,
-  },
-  {
-    id: 6,
-    name: "David Kim",
-    role: "Mobile Engineering Lead",
-    company: "Netflix",
-    avatarInitials: "DK",
-    avatarBg: "from-indigo-500 to-blue-600",
-    expertise: ["React Native", "iOS", "Android", "Swift"],
-    timezone: "KST (UTC+9)",
-    rating: 4.8,
-    reviewsCount: 27,
-    rate: 85,
-    nextAvailable: "Thursday, 1:00 PM KST",
-    isOnline: true,
-  },
-];
+import { useState, useEffect } from "react";
+import { fetchApi } from "../utils/api";
 
 const EXPERTISE_FILTERS = [
   "All",
@@ -104,12 +12,65 @@ const EXPERTISE_FILTERS = [
   "React Native",
 ];
 
+// Gradient colours cycle for avatars since backend doesn't store this
+const AVATAR_GRADIENTS = [
+  "from-blue-500 to-indigo-600",
+  "from-purple-500 to-indigo-600",
+  "from-emerald-500 to-teal-600",
+  "from-amber-500 to-orange-600",
+  "from-rose-500 to-pink-600",
+  "from-indigo-500 to-blue-600",
+];
+
+// Derive initials from a name string
+const getInitials = (name = "") =>
+  name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+
 export default function Mentors({ isAuthenticated, onSelectMentor, onBookSessionAction }) {
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState("All");
 
+  useEffect(() => {
+    const loadMentors = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchApi("/mentors");
+        setMentors(data);
+      } catch (err) {
+        setError(err.message || "Failed to load mentors");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMentors();
+  }, []);
+
+  // Normalise API mentor shape for the card UI
+  const normaliseMentor = (m, idx) => ({
+    id: m._id,
+    _id: m._id,
+    name: m.userId?.name || "Mentor",
+    role: m.bio ? m.bio.split(".")[0] : "Experienced Mentor",
+    company: "",
+    avatarInitials: getInitials(m.userId?.name),
+    avatarBg: AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length],
+    expertise: m.expertise || [],
+    timezone: m.userId?.timezone || "UTC",
+    rating: 4.9,
+    reviewsCount: 0,
+    rate: 85,
+    nextAvailable: m.availability?.length > 0 ? "Available this week" : "No slots yet",
+    isOnline: false,
+    availability: m.availability || [],
+  });
+
+  const normalisedMentors = mentors.map(normaliseMentor);
+
   // Filter mentors based on search query and expertise
-  const filteredMentors = MOCK_MENTORS.filter((mentor) => {
+  const filteredMentors = normalisedMentors.filter((mentor) => {
     const matchesSearch =
       mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mentor.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -181,7 +142,43 @@ export default function Mentors({ isAuthenticated, onSelectMentor, onBookSession
         </div>
 
         {/* Mentors Grid */}
-        {filteredMentors.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1,2,3].map((i) => (
+              <div key={i} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm animate-pulse space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-200" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-3/4" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-6 bg-slate-100 rounded-lg w-16" />
+                  <div className="h-6 bg-slate-100 rounded-lg w-20" />
+                  <div className="h-6 bg-slate-100 rounded-lg w-14" />
+                </div>
+                <div className="h-10 bg-slate-100 rounded-2xl w-full mt-4" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-white border border-rose-100 rounded-3xl p-12 text-center max-w-md mx-auto space-y-4">
+            <div className="p-3.5 bg-rose-50 text-rose-400 rounded-full inline-block">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-slate-800">Failed to Load Mentors</h3>
+            <p className="text-sm text-slate-500">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition-colors duration-200 cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredMentors.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredMentors.map((mentor) => (
               <div

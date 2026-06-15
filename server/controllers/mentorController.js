@@ -1,5 +1,6 @@
 import Mentor from '../models/Mentor.js';
 import User from '../models/User.js';
+import generateToken from '../utils/generateToken.js';
 
 // @desc    Get all mentors
 // @route   GET /api/mentors
@@ -45,6 +46,25 @@ export const getMentorById = async (req, res) => {
   }
 };
 
+// @desc    Get current logged in mentor profile
+// @route   GET /api/mentors/me
+// @access  Private/Mentor
+export const getMyMentorProfile = async (req, res) => {
+  try {
+    const mentor = await Mentor.findOne({ userId: req.user._id })
+      .populate('userId', 'name email role timezone');
+
+    if (!mentor) {
+      return res.status(404).json({ message: 'Mentor profile not found' });
+    }
+
+    res.json(mentor);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error fetching mentor profile' });
+  }
+};
+
 // @desc    Update mentor profile and availability
 // @route   PUT /api/mentors/profile
 // @access  Private/Mentor
@@ -84,5 +104,53 @@ export const updateMentorProfile = async (req, res) => {
       return res.status(400).json({ message: messages.join(', ') });
     }
     res.status(500).json({ message: 'Server error updating mentor profile' });
+  }
+};
+
+// @desc    Onboard user as a mentor
+// @route   POST /api/mentors/onboard
+// @access  Private
+export const onboardMentor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.role === 'mentor') {
+      return res.status(400).json({ message: 'User is already a mentor' });
+    }
+
+    const { bio, expertise, availability } = req.body;
+
+    // Create the mentor profile
+    const mentor = await Mentor.create({
+      userId: user._id,
+      bio: bio || '',
+      expertise: expertise || [],
+      availability: availability || [],
+    });
+
+    // Update user role
+    user.role = 'mentor';
+    await user.save();
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      timezone: user.timezone,
+      token: generateToken(user._id), // new token since role changed
+      mentorProfileId: mentor._id,
+    });
+  } catch (error) {
+    console.error(error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    res.status(500).json({ message: 'Server error during mentor onboarding' });
   }
 };

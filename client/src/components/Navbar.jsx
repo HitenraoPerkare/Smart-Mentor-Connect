@@ -5,8 +5,7 @@ export default function Navbar({
   onNavigate, 
   isAuthenticated, 
   currentUser, 
-  onLogout,
-  triggerToast 
+  onLogout
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -105,7 +104,7 @@ export default function Navbar({
             </button>
             <a
               href="#features"
-              onClick={(e) => {
+              onClick={() => {
                 if (currentPage !== "home") {
                   handleNavClick("home");
                 }
@@ -221,7 +220,7 @@ export default function Navbar({
           </button>
           <a
             href="#features"
-            onClick={(e) => {
+            onClick={() => {
               if (currentPage !== "home") {
                 handleNavClick("home");
               } else {

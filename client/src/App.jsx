@@ -26,9 +26,6 @@ function App() {
     return user ? JSON.parse(user) : null;
   });
 
-  const [role, setRole] = useState(() => {
-    return localStorage.getItem("role") || null;
-  });
 
   // Toast notification state
   const [toast, setToast] = useState(null);
@@ -74,10 +71,12 @@ function App() {
   const handleLogin = (userData) => {
     setIsAuthenticated(true);
     setCurrentUser(userData);
-    setRole(userData.role);
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("currentUser", JSON.stringify(userData));
     localStorage.setItem("role", userData.role);
+    if (userData.token) {
+      localStorage.setItem("token", userData.token);
+    }
     setToast({ message: "Successfully signed in.", type: "success" });
     
     if (redirectToAfterLogin) {
@@ -97,10 +96,12 @@ function App() {
   const handleRegister = (userData) => {
     setIsAuthenticated(true);
     setCurrentUser(userData);
-    setRole(userData.role);
     localStorage.setItem("isAuthenticated", "true");
     localStorage.setItem("currentUser", JSON.stringify(userData));
     localStorage.setItem("role", userData.role);
+    if (userData.token) {
+      localStorage.setItem("token", userData.token);
+    }
     setToast({ message: "Account created successfully.", type: "success" });
     
     if (redirectToAfterLogin) {
@@ -120,16 +121,29 @@ function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setRole(null);
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("role");
+    localStorage.removeItem("token");
     setToast({ message: "Successfully signed out.", type: "success" });
     setCurrentPage("home");
   };
 
+  const handleRoleUpdate = (updatedUserData) => {
+    setCurrentUser(updatedUserData);
+    localStorage.setItem("currentUser", JSON.stringify(updatedUserData));
+    localStorage.setItem("role", updatedUserData.role);
+    if (updatedUserData.token) {
+      localStorage.setItem("token", updatedUserData.token);
+    }
+  };
+
   const triggerToast = (message, type = "success") => {
     setToast({ message, type });
+  };
+
+  const handleRequireAuth = (targetPage) => {
+    setRedirectToAfterLogin({ page: targetPage });
   };
 
   return (
@@ -165,10 +179,17 @@ function App() {
             mentor={selectedMentor}
             slot={selectedSlot}
             onNavigate={setCurrentPage}
+            currentUser={currentUser}
           />
         )}
         {currentPage === "become-mentor" && (
-          <BecomeMentor onNavigate={setCurrentPage} />
+          <BecomeMentor 
+            onNavigate={setCurrentPage} 
+            currentUser={currentUser}
+            onRoleUpdate={handleRoleUpdate}
+            triggerToast={triggerToast}
+            onRequireAuth={handleRequireAuth}
+          />
         )}
         {currentPage === "login" && (
           <Login onNavigate={setCurrentPage} onLogin={handleLogin} />

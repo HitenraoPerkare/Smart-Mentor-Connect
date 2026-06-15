@@ -1,4 +1,4 @@
-import React from "react";
+import MentorDashboard from "../components/MentorDashboard";
 
 export default function Profile({ currentUser, onNavigate }) {
   if (!currentUser) {
@@ -132,21 +132,27 @@ export default function Profile({ currentUser, onNavigate }) {
 
           <div className="border-t border-slate-100 my-4" />
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => onNavigate("mentors")}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow hover:shadow-md transition-all duration-200 text-xs cursor-pointer text-center"
-            >
-              Find Mentors
-            </button>
-            <button
-              onClick={() => onNavigate("become-mentor")}
-              className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl text-xs transition-colors cursor-pointer text-center"
-            >
-              Become a Mentor
-            </button>
-          </div>
+          {currentUser.role === "mentor" ? (
+            <MentorDashboard currentUser={currentUser} onNavigate={onNavigate} />
+          ) : (
+            <>
+              {/* Navigation Buttons for students */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => onNavigate("mentors")}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow hover:shadow-md transition-all duration-200 text-xs cursor-pointer text-center"
+                >
+                  Find Mentors
+                </button>
+                <button
+                  onClick={() => onNavigate("become-mentor")}
+                  className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl text-xs transition-colors cursor-pointer text-center"
+                >
+                  Become a Mentor
+                </button>
+              </div>
+            </>
+          )}
 
         </div>
       </div>

@@ -1,10 +1,14 @@
-import React from "react";
+import { useState } from "react";
+
+const generateMeetCode = () => {
+  return Math.random().toString(36).substring(2, 5) + "-" + 
+         Math.random().toString(36).substring(2, 6) + "-" + 
+         Math.random().toString(36).substring(2, 5);
+};
 
 export default function BookingConfirmation({ mentor, slot, onNavigate }) {
   // Mock generated meet link
-  const meetCode = Math.random().toString(36).substring(2, 5) + "-" + 
-                    Math.random().toString(36).substring(2, 6) + "-" + 
-                    Math.random().toString(36).substring(2, 5);
+  const [meetCode] = useState(generateMeetCode);
   const meetUrl = `https://meet.google.com/${meetCode}`;
 
   return (

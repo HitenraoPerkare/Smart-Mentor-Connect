@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from 'react';
+import { fetchApi } from '../utils/api';
 
 export default function Register({ onNavigate, onRegister }) {
   const [name, setName] = useState("");
@@ -17,7 +18,7 @@ export default function Register({ onNavigate, onRegister }) {
     role: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Reset errors
@@ -63,41 +64,29 @@ export default function Register({ onNavigate, onRegister }) {
     // Normalize email for case-insensitive lookup
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Retrieve and check for duplicate email address
-    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const isDuplicate = registeredUsers.some(
-      (u) => u.email.toLowerCase() === normalizedEmail
-    );
+    try {
+      const data = await fetchApi('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+          role: role === "student" ? "student" : "mentor",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+        })
+      });
 
-    if (isDuplicate) {
-      newErrors.email = "Email is already registered.";
       setErrors(newErrors);
-      return;
+      onRegister({
+        email: data.email,
+        fullName: data.name,
+        name: data.name,
+        role: data.role.charAt(0).toUpperCase() + data.role.slice(1),
+        token: data.token
+      });
+    } catch (err) {
+      setErrors({ ...newErrors, email: err.message || "Registration failed" });
     }
-
-    // Capitalize role to "Student" or "Mentor"
-    const formattedRole = role === "student" ? "Student" : "Mentor";
-
-    // Store the account details in localStorage
-    const newAccount = {
-      fullName: name.trim(),
-      email: normalizedEmail,
-      password: password,
-      role: formattedRole,
-      createdAt: new Date().toISOString()
-    };
-
-    registeredUsers.push(newAccount);
-    localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
-
-    setErrors(newErrors);
-    onRegister({
-      email: newAccount.email,
-      fullName: newAccount.fullName,
-      name: newAccount.fullName,
-      role: newAccount.role,
-      createdAt: newAccount.createdAt
-    });
   };
 
   return (
