@@ -116,7 +116,32 @@ export default function BecomeMentor({ onNavigate, currentUser, onRoleUpdate, tr
       onRoleUpdate(updatedUser); // Update local token and role
       onNavigate("my-profile"); // Redirect
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      if (!err.status || err.status >= 500) {
+        const updatedUser = {
+          ...currentUser,
+          role: "mentor",
+          bio,
+          expertise,
+          availability
+        };
+        const localUsers = JSON.parse(localStorage.getItem("localUsers") || "[]");
+        const idx = localUsers.findIndex(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+        if (idx !== -1) {
+          localUsers[idx] = {
+            ...localUsers[idx],
+            role: "mentor",
+            bio,
+            expertise,
+            availability
+          };
+          localStorage.setItem("localUsers", JSON.stringify(localUsers));
+        }
+        triggerToast("Welcome aboard! You are now a mentor (Demo Mode).", "success");
+        onRoleUpdate(updatedUser);
+        onNavigate("my-profile");
+      } else {
+        setError(err.message || "Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

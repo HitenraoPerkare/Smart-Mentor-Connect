@@ -22,6 +22,165 @@ const AVATAR_GRADIENTS = [
   "from-indigo-500 to-blue-600",
 ];
 
+const MOCK_MENTORS = [
+  {
+    id: 1,
+    _id: 1,
+    name: "Sarah Chen",
+    title: "React Expert & Tech Lead",
+    role: "React Expert & Tech Lead",
+    company: "Stripe",
+    hourlyRate: 85,
+    rate: 85,
+    rating: 4.9,
+    totalReviews: 48,
+    reviewsCount: 48,
+    expertise: ["React", "UI/UX Design", "TypeScript", "Next.js", "System Design"],
+    bio: "Sarah is a frontend specialist and Tech Lead at Stripe with over 8 years of experience building scalable web applications. She is passionate about modern React, state management, design systems, and frontend performance optimization. She loves helping engineers transition from juniors to seniors by breaking down complex rendering and architectural patterns.",
+    image: "",
+    avatarInitials: "SC",
+    avatarBg: "from-blue-500 to-indigo-600",
+    timezone: "EDT (UTC-4)",
+    nextAvailable: "Tomorrow, 7:00 PM EDT",
+    isOnline: true,
+    availability: [
+      { dayOfWeek: 1, startTime: "19:00", endTime: "22:00" },
+      { dayOfWeek: 2, startTime: "17:00", endTime: "18:00" },
+      { dayOfWeek: 5, startTime: "21:00", endTime: "22:00" }
+    ]
+  },
+  {
+    id: 2,
+    _id: 2,
+    name: "Alex Mercer",
+    title: "Senior Systems Architect",
+    role: "Senior Systems Architect",
+    company: "AWS",
+    hourlyRate: 95,
+    rate: 95,
+    rating: 4.9,
+    totalReviews: 36,
+    reviewsCount: 36,
+    expertise: ["Node.js", "Python", "System Design", "DevOps"],
+    bio: "Alex is a Senior Systems Architect at AWS with a focus on cloud-native backend systems, databases, and microservices architecture. With over 10 years of experience, he helps developers optimize APIs, scale databases, design robust databases, and write production-grade Node.js services.",
+    image: "",
+    avatarInitials: "AM",
+    avatarBg: "from-purple-500 to-indigo-600",
+    timezone: "PDT (UTC-7)",
+    nextAvailable: "Tuesday, 10:00 AM PDT",
+    isOnline: true,
+    availability: [
+      { dayOfWeek: 2, startTime: "10:00", endTime: "13:00" },
+      { dayOfWeek: 3, startTime: "14:00", endTime: "17:00" },
+      { dayOfWeek: 4, startTime: "16:00", endTime: "19:00" }
+    ]
+  },
+  {
+    id: 3,
+    _id: 3,
+    name: "Priya Patel",
+    title: "AI Research Scientist",
+    role: "AI Research Scientist",
+    company: "Google",
+    hourlyRate: 90,
+    rate: 90,
+    rating: 4.9,
+    totalReviews: 52,
+    reviewsCount: 52,
+    expertise: ["Python", "Machine Learning", "System Design", "SQL"],
+    bio: "Priya is an AI Research Scientist at Google. She specializes in machine learning pipelines, deep learning modeling, Python scripting, and SQL optimization. She helps developers understand data science frameworks, train neural networks, and deploy machine learning models to production.",
+    image: "",
+    avatarInitials: "PP",
+    avatarBg: "from-emerald-500 to-teal-600",
+    timezone: "IST (UTC+5:30)",
+    nextAvailable: "Today, 3:30 PM IST",
+    isOnline: false,
+    availability: [
+      { dayOfWeek: 1, startTime: "15:30", endTime: "18:30" },
+      { dayOfWeek: 2, startTime: "10:30", endTime: "13:30" },
+      { dayOfWeek: 5, startTime: "16:00", endTime: "19:00" }
+    ]
+  },
+  {
+    id: 4,
+    _id: 4,
+    name: "Marcus Aurelius",
+    title: "Principal DevOps Engineer",
+    role: "Principal DevOps Engineer",
+    company: "HashiCorp",
+    hourlyRate: 88,
+    rate: 88,
+    rating: 4.8,
+    totalReviews: 24,
+    reviewsCount: 24,
+    expertise: ["DevOps", "System Design", "React", "Node.js"],
+    bio: "Marcus is a Principal DevOps Engineer at HashiCorp. He focuses on containerization, orchestration (Kubernetes, Docker), infrastructure as code (Terraform), and CI/CD automation. He teaches cloud architecture, microservices scaling, and Go development.",
+    image: "",
+    avatarInitials: "MA",
+    avatarBg: "from-amber-500 to-orange-600",
+    timezone: "CEST (UTC+2)",
+    nextAvailable: "Wednesday, 2:00 PM CEST",
+    isOnline: true,
+    availability: [
+      { dayOfWeek: 3, startTime: "14:00", endTime: "17:00" },
+      { dayOfWeek: 4, startTime: "10:00", endTime: "13:00" },
+      { dayOfWeek: 5, startTime: "15:00", endTime: "18:00" }
+    ]
+  },
+  {
+    id: 5,
+    _id: 5,
+    name: "Elena Rostova",
+    title: "Lead Product Designer",
+    role: "Lead Product Designer",
+    company: "Figma",
+    hourlyRate: 80,
+    rate: 80,
+    rating: 5.0,
+    totalReviews: 42,
+    reviewsCount: 42,
+    expertise: ["UI/UX Design", "React", "System Design", "Node.js"],
+    bio: "Elena is a Lead Product Designer at Figma. She bridges the gap between design and development, specializing in design systems, component structures, interactive prototypes, and premium web styling using CSS and React. She helps engineers build beautiful, responsive, and accessible interfaces.",
+    image: "",
+    avatarInitials: "ER",
+    avatarBg: "from-rose-500 to-pink-600",
+    timezone: "GMT (UTC+0)",
+    nextAvailable: "Monday, 9:00 AM GMT",
+    isOnline: false,
+    availability: [
+      { dayOfWeek: 1, startTime: "09:00", endTime: "12:00" },
+      { dayOfWeek: 3, startTime: "13:00", endTime: "16:00" },
+      { dayOfWeek: 5, startTime: "18:00", endTime: "21:00" }
+    ]
+  },
+  {
+    id: 6,
+    _id: 6,
+    name: "David Miller",
+    title: "Mobile Engineering Lead",
+    role: "Mobile Engineering Lead",
+    company: "Netflix",
+    hourlyRate: 90,
+    rate: 90,
+    rating: 4.9,
+    totalReviews: 31,
+    reviewsCount: 31,
+    expertise: ["React Native", "UI/UX Design", "React", "Node.js"],
+    bio: "David is the Mobile Engineering Lead at Netflix. He has over 7 years of experience building cross-platform iOS and Android apps with React Native, Swift, and Kotlin. He guides engineers on native bridging, app store deployments, offline-first caching, and fluid animations.",
+    image: "",
+    avatarInitials: "DM",
+    avatarBg: "from-indigo-500 to-blue-600",
+    timezone: "KST (UTC+9)",
+    nextAvailable: "Friday, 10:00 AM KST",
+    isOnline: true,
+    availability: [
+      { dayOfWeek: 4, startTime: "13:00", endTime: "16:00" },
+      { dayOfWeek: 5, startTime: "10:00", endTime: "13:00" },
+      { dayOfWeek: 6, startTime: "09:00", endTime: "12:00" }
+    ]
+  }
+];
+
 // Derive initials from a name string
 const getInitials = (name = "") =>
   name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -32,6 +191,7 @@ export default function Mentors({ isAuthenticated, onSelectMentor, onBookSession
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedExpertise, setSelectedExpertise] = useState("All");
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
     const loadMentors = async () => {
@@ -39,8 +199,15 @@ export default function Mentors({ isAuthenticated, onSelectMentor, onBookSession
         setLoading(true);
         const data = await fetchApi("/mentors");
         setMentors(data);
+        setIsDemoMode(false);
       } catch (err) {
-        setError(err.message || "Failed to load mentors");
+        if (!err.status || err.status >= 500) {
+          setMentors(MOCK_MENTORS);
+          setIsDemoMode(true);
+          setError(null);
+        } else {
+          setError(err.message || "Failed to load mentors");
+        }
       } finally {
         setLoading(false);
       }
@@ -67,7 +234,7 @@ export default function Mentors({ isAuthenticated, onSelectMentor, onBookSession
     availability: m.availability || [],
   });
 
-  const normalisedMentors = mentors.map(normaliseMentor);
+  const normalisedMentors = isDemoMode ? mentors : mentors.map(normaliseMentor);
 
   // Filter mentors based on search query and expertise
   const filteredMentors = normalisedMentors.filter((mentor) => {
@@ -87,6 +254,15 @@ export default function Mentors({ isAuthenticated, onSelectMentor, onBookSession
     <div className="bg-slate-50 min-h-screen py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
+        {isDemoMode && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 flex items-center gap-3 text-sm font-semibold animate-pulse shadow-sm">
+            <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Demo Mode Active – Backend unavailable. Showing sample mentors.</span>
+          </div>
+        )}
+
         {/* Header Block */}
         <div className="text-left space-y-2">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">

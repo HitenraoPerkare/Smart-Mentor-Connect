@@ -15,21 +15,55 @@ export default function MentorDashboard({ currentUser, onNavigate }) {
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
+      setError(null);
+      let bookingsData = [];
+      let profileData = { availability: [] };
+
+      // 1. Try bookings fetch
       try {
-        const [bookingsData, profileData] = await Promise.all([
-          fetchApi("/bookings/my-bookings"),
-          fetchApi("/mentors/me"),
-        ]);
-        setBookings(bookingsData);
-        setAvailability(profileData.availability || []);
+        bookingsData = await fetchApi("/bookings/my-bookings");
       } catch (err) {
-        setError("Failed to load dashboard data.");
-      } finally {
-        setLoading(false);
+        if (!err.status || err.status >= 500) {
+          const localBookings = JSON.parse(localStorage.getItem("localBookings") || "[]");
+          const matched = localBookings.filter(
+            (b) =>
+              b.mentorId === currentUser?._id ||
+              b.mentorId === currentUser?.id ||
+              b.studentId === currentUser?._id ||
+              b.studentId === currentUser?.id
+          );
+          bookingsData = matched.map((b, idx) => ({
+            _id: b.id || `local-booking-${idx}`,
+            date: b.date,
+            startTime: b.time || b.startTime,
+            endTime: b.endTime || b.time,
+            status: b.status || "confirmed",
+            studentId: { name: "Student Demo" },
+            mentorId: { userId: { name: "Mentor Demo" } }
+          }));
+        } else {
+          setError("Failed to load dashboard bookings.");
+        }
       }
+
+      // 2. Try profile/availability fetch
+      try {
+        profileData = await fetchApi("/mentors/me");
+      } catch (err) {
+        if (!err.status || err.status >= 500) {
+          const localAvailability = JSON.parse(localStorage.getItem("localAvailability") || "[]");
+          profileData = { availability: localAvailability };
+        } else {
+          setError("Failed to load profile availability.");
+        }
+      }
+
+      setBookings(bookingsData);
+      setAvailability(profileData.availability || []);
+      setLoading(false);
     };
     fetchDashboardData();
-  }, []);
+  }, [currentUser]);
 
   const addAvailabilitySlot = () => {
     setAvailability([...availability, { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" }]);
@@ -57,7 +91,13 @@ export default function MentorDashboard({ currentUser, onNavigate }) {
       setSuccessMsg("Availability updated successfully!");
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
-      setError(err.message || "Failed to save availability.");
+      if (!err.status || err.status >= 500) {
+        localStorage.setItem("localAvailability", JSON.stringify(availability));
+        setSuccessMsg("Availability updated locally (Demo Mode)!");
+        setTimeout(() => setSuccessMsg(""), 3000);
+      } else {
+        setError(err.message || "Failed to save availability.");
+      }
     } finally {
       setSaving(false);
     }

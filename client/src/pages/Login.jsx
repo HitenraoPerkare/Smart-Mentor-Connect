@@ -1,16 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchApi } from '../utils/api';
 
 export default function Login({ onNavigate, onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Validation errors state
   const [errors, setErrors] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        await fetchApi('/mentors');
+      } catch (err) {
+        if (!err.status || err.status >= 500) {
+          setIsDemoMode(true);
+        }
+      }
+    };
+    checkBackend();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +67,29 @@ export default function Login({ onNavigate, onLogin }) {
         token: data.token
       });
     } catch (err) {
-      setErrors({ ...newErrors, email: err.message || "Login failed" });
+      if (!err.status || err.status >= 500) {
+        // Local auth fallback
+        const localUsers = JSON.parse(localStorage.getItem("localUsers") || "[]");
+        const normalizedEmail = email.trim().toLowerCase();
+        const matchedUser = localUsers.find(
+          (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
+        );
+
+        if (matchedUser) {
+          setErrors(newErrors);
+          onLogin({
+            email: matchedUser.email,
+            fullName: matchedUser.name,
+            name: matchedUser.name,
+            role: matchedUser.role.charAt(0).toUpperCase() + matchedUser.role.slice(1),
+            token: `local-token-${Date.now()}`
+          });
+        } else {
+          setErrors({ ...newErrors, email: "Invalid credentials (local auth)" });
+        }
+      } else {
+        setErrors({ ...newErrors, email: err.message || "Login failed" });
+      }
     }
   };
 
@@ -64,6 +100,15 @@ export default function Login({ onNavigate, onLogin }) {
         {/* Card Wrapper */}
         <div className="bg-white border border-slate-100 rounded-3xl p-8 md:p-10 shadow-xl shadow-slate-100/80 space-y-6">
           
+          {isDemoMode && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 flex items-center gap-3 text-xs font-semibold animate-pulse shadow-sm">
+              <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>Demo Mode Active – Using local authentication.</span>
+            </div>
+          )}
+
           {/* Logo & Header */}
           <div className="text-center space-y-2">
             <div className="inline-block bg-blue-50 p-3 rounded-2xl text-blue-600 mb-2">

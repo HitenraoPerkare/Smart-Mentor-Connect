@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchApi } from '../utils/api';
 
 export default function Register({ onNavigate, onRegister }) {
@@ -8,6 +8,7 @@ export default function Register({ onNavigate, onRegister }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState(""); // "" signifies unselected role
   const [showPassword, setShowPassword] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Validation errors state
   const [errors, setErrors] = useState({
@@ -17,6 +18,19 @@ export default function Register({ onNavigate, onRegister }) {
     confirmPassword: "",
     role: "",
   });
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        await fetchApi('/mentors');
+      } catch (err) {
+        if (!err.status || err.status >= 500) {
+          setIsDemoMode(true);
+        }
+      }
+    };
+    checkBackend();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,7 +99,44 @@ export default function Register({ onNavigate, onRegister }) {
         token: data.token
       });
     } catch (err) {
-      setErrors({ ...newErrors, email: err.message || "Registration failed" });
+      if (!err.status || err.status >= 500) {
+        // Fallback to local registration
+        const localUsers = JSON.parse(localStorage.getItem("localUsers") || "[]");
+        const existingUser = localUsers.find(
+          (u) => u.email.toLowerCase() === normalizedEmail
+        );
+
+        if (existingUser) {
+          setErrors({ ...newErrors, email: "Email already registered locally" });
+          return;
+        }
+
+        // Structure required by prompt: id, name, email, password, role: "user"
+        // Wait, to keep compatibility with App.jsx role mappings for dashboard accesses, let's keep role: "user" but map to "Student" or "Mentor" in UI format if selected
+        const localRole = role === "student" ? "student" : "mentor"; // or prompt's literal role: "user"?
+        // Let's use prompt's required structure exactly:
+        const newUser = {
+          id: Date.now(),
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+          role: "user"
+        };
+
+        localUsers.push(newUser);
+        localStorage.setItem("localUsers", JSON.stringify(localUsers));
+
+        setErrors(newErrors);
+        onRegister({
+          email: newUser.email,
+          fullName: newUser.name,
+          name: newUser.name,
+          role: newUser.role.charAt(0).toUpperCase() + newUser.role.slice(1), // will capitalize to "User"
+          token: `local-token-${Date.now()}`
+        });
+      } else {
+        setErrors({ ...newErrors, email: err.message || "Registration failed" });
+      }
     }
   };
 
@@ -96,6 +147,15 @@ export default function Register({ onNavigate, onRegister }) {
         {/* Card Wrapper */}
         <div className="bg-white border border-slate-100 rounded-3xl p-8 md:p-10 shadow-xl shadow-slate-100/80 space-y-6">
           
+          {isDemoMode && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 flex items-center gap-3 text-xs font-semibold animate-pulse shadow-sm">
+              <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>Demo Mode Active – Using local authentication.</span>
+            </div>
+          )}
+
           {/* Logo & Header */}
           <div className="text-center space-y-2">
             <div className="inline-block bg-blue-50 p-3 rounded-2xl text-blue-600 mb-2">
